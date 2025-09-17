@@ -1,3 +1,4 @@
+```html
 <!doctype html>
 <html lang="es">
 <head>
@@ -98,6 +99,350 @@
       <h2 class="text-2xl font-semibold mb-4">Quiz rápido</h2>
       <form id="quizForm" class="space-y-6"></form>
       <div class="mt-3 flex items-center gap-3">
-        <button type="button" id="btnQuiz" class="rounde
+        <button type="button" id="btnQuiz" class="rounded-md bg-emerald-600 px-4 py-2 text-white hover:bg-emerald-700">Corregir</button>
+        <button type="button" id="btnQuizReset" class="rounded-md bg-slate-200 px-4 py-2 hover:bg-slate-300">Limpiar respuestas</button>
+        <span id="quizResult" class="text-sm text-slate-700"></span>
+      </div>
+    </section>
+  </main>
 
-          
+  <!-- Footer -->
+  <footer class="bg-white border-t border-slate-200">
+    <div class="max-w-6xl mx-auto px-4 py-6 text-sm text-slate-600">
+      © 2025 — CC BY 4.0 · Hecho con Tailwind CDN · Sin build
+    </div>
+  </footer>
+
+  <!-- JS: datos + render + filtro + quiz -->
+  <script>
+    // === Datos de ejemplo ===
+
+    // Tipos de almacenamiento
+    const items = [
+      {
+        tipo: "RAM",
+        uso: "Memoria volátil de acceso ultrarrápido para procesos activos.",
+        ejemplos: "DDR4, DDR5",
+        latencia: "Nanosegundos",
+        rendimiento: "Muy alto (GB/s)",
+        durabilidad: "Volátil (pierde datos sin energía)",
+        escalabilidad: "Limitada por slots físicos",
+        coste: "Alto por GB",
+        desc: "Fundamental para ejecutar programas y almacenar datos temporales.",
+        icon: "⚡"
+      },
+      {
+        tipo: "SSD NVMe",
+        uso: "Almacenamiento persistente de baja latencia en equipos y servidores.",
+        ejemplos: "Samsung 980 Pro, Intel Optane",
+        latencia: "Decenas de microsegundos",
+        rendimiento: "Muy alto (IOPS y MB/s)",
+        durabilidad: "Alta (limitada por ciclos de escritura)",
+        escalabilidad: "Limitada al hardware local",
+        coste: "Medio-Alto por GB",
+        desc: "Ideal para bases de datos transaccionales y sistemas que requieren rapidez.",
+        icon: "🚀"
+      },
+      {
+        tipo: "HDD",
+        uso: "Almacenamiento masivo y económico para datos generales.",
+        ejemplos: "Seagate IronWolf, WD Blue",
+        latencia: "Milisegundos",
+        rendimiento: "Medio (MB/s, IOPS bajos)",
+        durabilidad: "Buena (partes mecánicas)",
+        escalabilidad: "Alta (múltiples unidades)",
+        coste: "Bajo por GB",
+        desc: "Útil para archivos grandes, backups y almacenamiento de bajo coste.",
+        icon: "📀"
+      },
+      {
+        tipo: "NAS",
+        uso: "Almacenamiento en red compartido a nivel de archivos.",
+        ejemplos: "Synology, QNAP",
+        latencia: "Baja (depende de red)",
+        rendimiento: "Medio-Alto",
+        durabilidad: "Alta (RAID opcional)",
+        escalabilidad: "Moderada (expansión limitada)",
+        coste: "Medio",
+        desc: "Solución práctica para oficinas o pequeños grupos de trabajo.",
+        icon: "📁"
+      },
+      {
+        tipo: "SAN",
+        uso: "Red dedicada de almacenamiento a nivel de bloques.",
+        ejemplos: "Fibre Channel SAN, iSCSI SAN",
+        latencia: "Muy baja",
+        rendimiento: "Muy alto",
+        durabilidad: "Alta",
+        escalabilidad: "Alta (clusters)",
+        coste: "Alto",
+        desc: "Usada en entornos empresariales críticos (bases de datos, VMs).",
+        icon: "🧱"
+      },
+      {
+        tipo: "Objeto en nube",
+        uso: "Almacenamiento de objetos masivo y económico.",
+        ejemplos: "Amazon S3, Azure Blob, Google Cloud Storage",
+        latencia: "Media",
+        rendimiento: "Alto en throughput, menor en IOPS",
+        durabilidad: "Muy alta (11 nueves)",
+        escalabilidad: "Ilimitada",
+        coste: "Bajo por GB; costes por acceso",
+        desc: "Perfecto para backups, multimedia, big data y lagos de datos.",
+        icon: "🪣"
+      },
+      {
+        tipo: "Bloque en nube",
+        uso: "Volúmenes de bloque gestionados en la nube.",
+        ejemplos: "AWS EBS, Azure Managed Disks",
+        latencia: "Baja",
+        rendimiento: "Alto",
+        durabilidad: "Alta (replicación en zona)",
+        escalabilidad: "Alta (ampliable por API)",
+        coste: "Medio-Alto",
+        desc: "Indicado para bases de datos y sistemas de archivos en la nube.",
+        icon: "☁️"
+      },
+      {
+        tipo: "BD relacional",
+        uso: "Gestión de datos estructurados con modelo tabular.",
+        ejemplos: "MySQL, PostgreSQL, Oracle DB",
+        latencia: "Baja",
+        rendimiento: "Alto (depende de HW)",
+        durabilidad: "Alta (ACID)",
+        escalabilidad: "Vertical; horizontal limitada",
+        coste: "Variable (OSS vs licencias)",
+        desc: "Adecuado para aplicaciones críticas con consistencia fuerte.",
+        icon: "📚"
+      },
+      {
+        tipo: "NoSQL clave-valor",
+        uso: "Almacenamiento rápido de pares clave-valor sin esquema.",
+        ejemplos: "Redis, DynamoDB",
+        latencia: "Muy baja",
+        rendimiento: "Muy alto",
+        durabilidad: "Alta (según motor)",
+        escalabilidad: "Horizontal masiva",
+        coste: "Variable (eficiente en la nube)",
+        desc: "Excelente para cachés, sesiones y aplicaciones web a gran escala.",
+        icon: "🔑"
+      },
+      {
+        tipo: "Cinta / Archivado",
+        uso: "Almacenamiento a muy largo plazo y bajo coste.",
+        ejemplos: "LTO Ultrium",
+        latencia: "Alta (minutos en acceso)",
+        rendimiento: "Medio en throughput secuencial",
+        durabilidad: "Muy alta (décadas si se conserva bien)",
+        escalabilidad: "Muy alta (bibliotecas de cintas)",
+        coste: "Muy bajo por GB",
+        desc: "Usado en archivado, copias de seguridad y cumplimiento.",
+        icon: "📼"
+      }
+    ];
+
+    // Glosario de términos
+    const glosario = [
+      { termino: "Latencia", definicion: "Tiempo que tarda en responder una operación de E/S." },
+      { termino: "IOPS", definicion: "Operaciones de entrada/salida por segundo, clave en cargas pequeñas." },
+      { termino: "Throughput", definicion: "Datos transferidos por unidad de tiempo (MB/s, GB/s)." },
+      { termino: "ACID", definicion: "Atomicidad, Consistencia, Aislamiento, Durabilidad en BD relacionales." },
+      { termino: "CAP", definicion: "Consistencia, Disponibilidad y Tolerancia a particiones: no se maximizan a la vez." },
+      { termino: "RAID", definicion: "Conjunto de técnicas para mejorar rendimiento y/o tolerancia a fallos." },
+      { termino: "Durabilidad", definicion: "Persistencia de los datos en el tiempo sin pérdida." },
+      { termino: "Tiering", definicion: "Mover datos entre niveles (hot/warm/cold) según uso/coste." }
+    ];
+
+    // Preguntas de quiz
+    const preguntas = [
+      {
+        enunciado: "¿Qué tipo elegirías para millones de fotos servidas por HTTP desde la nube?",
+        opciones: ["Bloque en nube", "Archivo en NAS", "Objeto en nube", "Cinta / Archivado"],
+        correcta: "Objeto en nube"
+      },
+      {
+        enunciado: "¿Qué propiedad es característica de las BD relacionales?",
+        opciones: ["Eventual consistency", "ACID", "Clave-valor", "Latencia en minutos"],
+        correcta: "ACID"
+      },
+      {
+        enunciado: "Para archivado a 30 años con el menor coste por GB, ¿qué tecnología usarías?",
+        opciones: ["SSD NVMe", "Cinta / Archivado", "RAM", "SAN"],
+        correcta: "Cinta / Archivado"
+      }
+    ];
+
+    // === Render ===
+
+    const cardsGrid = document.getElementById('cardsGrid');
+    const tablaBody = document.getElementById('tablaBody');
+    const glosarioGrid = document.getElementById('glosarioGrid');
+    const quizForm = document.getElementById('quizForm');
+    const emptyMsg = document.getElementById('emptyMsg');
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
+
+    function renderCards(list) {
+      cardsGrid.innerHTML = '';
+      list.forEach(item => {
+        const el = document.createElement('article');
+        el.className = "card rounded-xl border border-slate-200 bg-white p-4 shadow-sm";
+        el.dataset.type = item.tipo.toLowerCase();
+        el.dataset.tags = (item.desc + ' ' + item.uso + ' ' + item.ejemplos).toLowerCase();
+        el.innerHTML = `
+          <div class="text-3xl mb-2">${escapeHtml(item.icon || '💾')}</div>
+          <h3 class="font-semibold text-lg">${escapeHtml(item.tipo)}</h3>
+          <p class="text-sm text-slate-700">${escapeHtml(item.desc)}</p>
+          <ul class="mt-3 text-sm list-disc ml-5">
+            <li><span class="font-medium">Uso:</span> ${escapeHtml(item.uso)}</li>
+            <li><span class="font-medium">Latencia:</span> ${escapeHtml(item.latencia)}</li>
+            <li><span class="font-medium">Rendimiento:</span> ${escapeHtml(item.rendimiento)}</li>
+            <li><span class="font-medium">Coste:</span> ${escapeHtml(item.coste)}</li>
+            <li><span class="font-medium">Ejemplos:</span> ${escapeHtml(item.ejemplos)}</li>
+          </ul>
+        `;
+        cardsGrid.appendChild(el);
+      });
+    }
+
+    function renderTable(list) {
+      tablaBody.innerHTML = '';
+      list.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.className = "border-t";
+        tr.innerHTML = `
+          <td class="px-4 py-3">${escapeHtml(item.tipo)}</td>
+          <td class="px-4 py-3">${escapeHtml(item.latencia)}</td>
+          <td class="px-4 py-3">${escapeHtml(item.rendimiento)}</td>
+          <td class="px-4 py-3">${escapeHtml(item.durabilidad)}</td>
+          <td class="px-4 py-3">${escapeHtml(item.escalabilidad)}</td>
+          <td class="px-4 py-3">${escapeHtml(item.coste)}</td>
+          <td class="px-4 py-3">${escapeHtml(item.uso)}</td>
+          <td class="px-4 py-3">${escapeHtml(item.ejemplos)}</td>
+        `;
+        tablaBody.appendChild(tr);
+      });
+    }
+
+    function renderGlosario() {
+      glosarioGrid.innerHTML = '';
+      glosario.forEach(g => {
+        const card = document.createElement('div');
+        card.className = "p-4 bg-white rounded-xl border border-slate-200";
+        card.innerHTML = `
+          <dt class="font-semibold">${escapeHtml(g.termino)}</dt>
+          <dd class="text-sm text-slate-700">${escapeHtml(g.definicion)}</dd>
+        `;
+        glosarioGrid.appendChild(card);
+      });
+    }
+
+    function renderQuiz() {
+      quizForm.innerHTML = '';
+      preguntas.forEach((q, i) => {
+        const fs = document.createElement('fieldset');
+        fs.className = "bg-white rounded-xl border border-slate-200 p-4";
+        const name = `q${i+1}`;
+        fs.innerHTML = `
+          <legend class="font-semibold mb-2">${escapeHtml(`${i+1}) ${q.enunciado}`)}</legend>
+          ${q.opciones.map(op => `
+            <label class="block">
+              <input type="radio" name="${name}" value="${escapeHtml(op)}" class="mr-2">
+              ${escapeHtml(op)}
+            </label>
+          `).join('')}
+        `;
+        quizForm.appendChild(fs);
+      });
+    }
+
+    // === Filtros ===
+    const searchInput = document.getElementById('search');
+    const filtersWrap = document.getElementById('filters');
+    const btnClear = document.getElementById('btnClear');
+    const btnReset = document.getElementById('btnReset');
+
+    function buildTypeFilters() {
+      filtersWrap.innerHTML = '';
+      const tipos = [...new Set(items.map(i => i.tipo))];
+      tipos.forEach(t => {
+        const id = 'filter-' + t.toLowerCase().replace(/\s+/g, '-');
+        const wrapper = document.createElement('label');
+        wrapper.className = "inline-flex items-center gap-2";
+        wrapper.innerHTML = `
+          <input id="${id}" type="checkbox" class="filter-type rounded" value="${escapeHtml(t.toLowerCase())}" checked>
+          <span>${escapeHtml(t)}</span>
+        `;
+        filtersWrap.appendChild(wrapper);
+      });
+    }
+
+    function applyFilter() {
+      const q = (searchInput.value || '').toLowerCase().trim();
+      const checks = Array.from(document.querySelectorAll('.filter-type'));
+      const active = new Set(checks.filter(c => c.checked).map(c => c.value));
+
+      const filtered = items.filter(it => {
+        const matchesType = active.has(it.tipo.toLowerCase());
+        const haystack = (it.desc + ' ' + it.uso + ' ' + it.ejemplos + ' ' + it.tipo).toLowerCase();
+        const matchesQuery = !q || haystack.includes(q);
+        return matchesType && matchesQuery;
+      });
+
+      renderCards(filtered);
+      renderTable(filtered);
+      emptyMsg.classList.toggle('hidden', filtered.length !== 0);
+    }
+
+    // === Quiz logic ===
+    const btnQuiz = document.getElementById('btnQuiz');
+    const btnQuizReset = document.getElementById('btnQuizReset');
+    const quizResult = document.getElementById('quizResult');
+
+    function gradeQuiz() {
+      let score = 0;
+      preguntas.forEach((q, i) => {
+        const name = `q${i+1}`;
+        const checked = document.querySelector(`input[name="${name}"]:checked`);
+        if (checked && checked.value === q.correcta) score++;
+      });
+      const total = preguntas.length;
+      quizResult.textContent = `Puntuación: ${score}/${total} — ${score === total ? '¡Perfecto!' : '¡Bien! Revisa las tarjetas para mejorar.'}`;
+    }
+
+    function resetQuiz() {
+      const radios = quizForm.querySelectorAll('input[type="radio"]');
+      radios.forEach(r => r.checked = false);
+      quizResult.textContent = '';
+    }
+
+    // === Init ===
+    function init() {
+      buildTypeFilters();
+      renderGlosario();
+      renderQuiz();
+      renderCards(items);
+      renderTable(items);
+
+      // Bindings
+      searchInput?.addEventListener('input', applyFilter);
+      filtersWrap.addEventListener('change', (e) => {
+        if (e.target && e.target.classList.contains('filter-type')) applyFilter();
+      });
+      btnClear?.addEventListener('click', () => { searchInput.value = ''; applyFilter(); });
+      btnReset?.addEventListener('click', () => {
+        searchInput.value = '';
+        document.querySelectorAll('.filter-type').forEach(c => c.checked = true);
+        applyFilter();
+      });
+      btnQuiz?.addEventListener('click', gradeQuiz);
+      btnQuizReset?.addEventListener('click', resetQuiz);
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
+```
